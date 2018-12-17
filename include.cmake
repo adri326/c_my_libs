@@ -14,6 +14,8 @@ set(MY_LIBS_SOURCES
   ${MY_LIBS_DIR}/libs/time.h
 )
 
+# Note: you will never need to use this, it is using a library called EasySDL (an SDL abstraction layer) which is at this time not public. In case you do, make sure the script you are using to import EasySDL does set the EASYSDL_LOADED variable to true and make sure to include easysdl first
+
 if(DEFINED MY_LIBS_USE_EASYSDL AND MY_LIBS_USE_EASYSDL)
   if(DEFINED EASYSDL_LOADED AND EASYSDL_LOADED)
     set(MY_LIBS_SOURCES ${MY_LIBS_SOURCES}

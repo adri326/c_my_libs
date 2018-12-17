@@ -55,6 +55,8 @@ bool Vector_collinear(Vector a, Vector b);
 bool Vector_orthogonal(Vector a, Vector b);
 // rotates a vector `v` by `theta`; `v` has to be 2D; modifies `v`
 void Vector_rotate2D(Vector v, double theta);
+// returns the length of a vector
+double Vector_length(Vector v);
 
 // Point methods
 
@@ -74,11 +76,15 @@ Point Point_copy(Point p);
 void Point_print(Point p);
 // translates a point `p` by the vector `v`; they need to have the same dimension; modifies `p`
 void Point_translate(Point p, Vector v);
+// gives the distance between two points
+double Point_distance(Point a, Point b);
 
 // Poly methods
 
 // creates a new Poly, being a `dimension`-dimensional polygon with `n_points` points; copies the Point pointers
 Poly Poly_new(const size_t dimension, const size_t n_points, Point* points);
+// creates a new, empty Poly
+Poly Poly_newSegment(Point a, Point b);
 // creates a segment Poly, using the dimension of the two input points; `a` and `b` must have the same dimension
 Poly Poly_newSegment(Point a, Point b);
 // creates a triangle Poly, using the dimension of the three input points; `a`, `b` and `c` must have the same dimension
@@ -91,5 +97,9 @@ void Poly_destroy(Poly p);
 void Poly_destroyPoints(Poly p);
 // prints out a Poly instance in the `((xa; ya; ...), (xb; yb; ...), ...)` form
 void Poly_print(Poly p);
+// appends a Point to a Poly instance, freeing its old `points` array
+void Poly_appendPoint(Poly poly, Point point);
+// pops the last Point in the Poly instance, the `points` array is not modified
+Point Poly_popPoint(Poly poly);
 
 #endif

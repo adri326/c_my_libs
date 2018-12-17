@@ -138,6 +138,15 @@ void Vector_rotate2D(Vector v, double theta) {
   }
 }
 
+double Vector_length(Vector v) {
+  double sum = 0;
+  size_t x;
+  for (x = 0; x < v->dimension; x++) {
+    sum += v->values[x] * v->values[x];
+  }
+  return sqrt(sum);
+}
+
 // Point methods
 
 Point Point_new(const size_t dimension, double* coordinates) {
@@ -208,6 +217,19 @@ void Point_translate(Point p, Vector v) {
   else {
     printf("Invalid point/vector dimension for Point_translate: A (point) is %d and B (vector) is %d\n", p->dimension, v->dimension);
   }
+}
+
+double Point_distance(Point a, Point b) {
+  if (a->dimension != b->dimension) {
+    printf("Invalid point dimensions for Point_distance: A is %d and B is %d\n", a->dimension, b->dimension);
+    return 0;
+  }
+  double sum = 0;
+  size_t n;
+  for (n = 0; n < a->dimension; n++) {
+    sum += (b->coordinates[n] - a->coordinates[n]) * (b->coordinates[n] - a->coordinates[n]);
+  }
+  return sqrt(sum);
 }
 
 static Poly Poly_null;
@@ -306,10 +328,23 @@ void Poly_print(Poly p) {
   printf(")");
 }
 
-void Poly_appendPoint(Poly poly, Point point) {
+void Poly_pushPoint(Poly poly, Point point) {
   if (poly->dimension != point->dimension) {
     printf("Invalid dimensions for Poly_appendPoint: poly is %d, point is %d\n", poly->dimension, point->dimension);
     return;
   }
-  
+  Point* points = poly->points;
+  size_t n;
+  poly->points = (Point*)malloc(sizeof(Point) * ++poly->n_points);
+  for (n = 0; n < poly->n_points - 1; n++) {
+    poly->points[n] = points[n];
+  }
+  poly->points[poly->n_points - 1] = point;
+  free(points);
+}
+
+Point Poly_popPoint(Poly poly) {
+  Point point = poly->points[poly->n_points - 1];
+  poly->n_points--;
+  return point;
 }
