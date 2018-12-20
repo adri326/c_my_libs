@@ -108,5 +108,7 @@ void Poly_appendPoint(Poly poly, Point point);
 Point Poly_popPoint(Poly poly);
 // returns whether or not two segments intersect each other
 bool Poly_segmentsIntersect(Poly a, Poly b);
+// returns the perimeter of a polygon
+double Poly_perimeter(Poly p);
 
 #endif

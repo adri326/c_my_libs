@@ -403,3 +403,16 @@ bool Poly_segmentsIntersect(Poly a, Poly b) {
 
   return x1 * y1 <= 0 && x2 * y2 <= 0;
 }
+
+double Poly_perimeter(Poly p) {
+  if (p->n_points < 2) return 0;
+  size_t n;
+  double sum;
+  for (n = 1; n < p->n_points; n++) {
+    sum += Point_distance(p->points[n-1], p->points[n]);
+  }
+  if (p->n_points > 2) {
+    sum += Point_distance(p->points[p->n_points - 1], p->points[0]);
+  }
+  return sum;
+}
