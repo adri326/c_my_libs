@@ -1,5 +1,7 @@
 #include "geometry.h"
 
+static Vector Vector_null;
+
 // Vector methods
 
 Vector Vector_new(const size_t dimension, double* values) {
@@ -10,6 +12,7 @@ Vector Vector_new(const size_t dimension, double* values) {
   for (n = 0; n < dimension; n++) {
     v->values[n] = values[n];
   }
+  return v;
 }
 
 Vector Vector_new2D(const double x, const double y) {
@@ -28,6 +31,21 @@ Vector Vector_new3D(const double x, const double y, const double z) {
   v->values[0] = x;
   v->values[1] = y;
   v->values[2] = z;
+  return v;
+}
+
+Vector Vector_newFromPoints(Point a, Point b) {
+  if (a->dimension != b->dimension) {
+    printf("Invalid dimensions for Vector_newFromPoints: a is %d and b is %d\n", a->dimension, b->dimension);
+    return Vector_null;
+  }
+  double* dw = (double*)malloc(sizeof(double) * a->dimension);
+  size_t n;
+  for (n = 0; n < a->dimension; n++) {
+    dw[n] = b->coordinates[n] - a->coordinates[n];
+  }
+  Vector v = Vector_new(a->dimension, dw);
+  free(dw);
   return v;
 }
 
@@ -50,7 +68,7 @@ void Vector_print(Vector v) {
   printf(")");
 }
 
-double Vector_dot_product(Vector a, Vector b) {
+double Vector_dotProduct(Vector a, Vector b) {
   if (a->dimension == b->dimension) {
     double res = 0;
     size_t n;
@@ -65,7 +83,7 @@ double Vector_dot_product(Vector a, Vector b) {
   }
 }
 
-double Vector_cross_product(Vector a, Vector b) {
+double Vector_crossProduct(Vector a, Vector b) {
   if (a->dimension == b->dimension) {
     double sum = 0;
     size_t n, o;
@@ -120,7 +138,7 @@ bool Vector_collinear(Vector a, Vector b) {
 }
 
 bool Vector_orthogonal(Vector a, Vector b) {
-  double p = Vector_dot_product(a, b);
+  double p = Vector_dotProduct(a, b);
   return p > -__DBL_EPSILON__ && p < __DBL_EPSILON__;
 }
 
@@ -314,8 +332,12 @@ void Poly_destroyPoints(Poly p) {
   for (n = 0; n < p->dimension; n++) {
     Point_destroy(p->points[n]);
   }
-  free(p->points);
   p->n_points = 0;
+}
+
+void Poly_destroyAll(Poly p) {
+  Poly_destroyPoints(p);
+  Poly_destroy(p);
 }
 
 void Poly_print(Poly p) {
@@ -347,4 +369,37 @@ Point Poly_popPoint(Poly poly) {
   Point point = poly->points[poly->n_points - 1];
   poly->n_points--;
   return point;
+}
+
+bool Poly_segmentsIntersect(Poly a, Poly b) {
+  if (a->dimension != 2 || b->dimension != 2) {
+    printf("Invalid dimensions for Poly_linesIntersect: a is %d, b is %d while they should both be 2\n", a->dimension, b->dimension);
+    return false;
+  }
+  if (a->n_points != 2 || b->n_points != 2) {
+    printf("Invalid amount of points for Poly_linesIntersect: a has %d, b has %d while they should both have 2\n", a->n_points, b->n_points);
+    return false;
+  }
+
+  Vector u = Vector_newFromPoints(a->points[0], a->points[1]);
+  Vector v = Vector_newFromPoints(a->points[0], b->points[0]);
+  Vector w = Vector_newFromPoints(a->points[0], b->points[1]);
+  Vector_rotate2D(u, M_PI / 2);
+
+  double x1 = Vector_dotProduct(u, v);
+  double y1 = Vector_dotProduct(u, w);
+
+  Vector_destroy(w);
+  Vector_destroy(v);
+  Vector_destroy(u);
+
+  u = Vector_newFromPoints(b->points[0], b->points[1]);
+  v = Vector_newFromPoints(b->points[0], a->points[0]);
+  w = Vector_newFromPoints(b->points[0], a->points[1]);
+  Vector_rotate2D(u, M_PI / 2);
+
+  double x2 = Vector_dotProduct(u, v);
+  double y2 = Vector_dotProduct(u, w);
+
+  return x1 * y1 <= 0 && x2 * y2 <= 0;
 }
