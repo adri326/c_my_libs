@@ -3,5 +3,6 @@
 #include <time.h>
 
 double getMillis();
+void sleep(double millis);
 
 #endif

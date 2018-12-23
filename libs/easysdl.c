@@ -59,6 +59,7 @@ bool easysdlHasExited() {
 bool fetchEvents(void (*handler)(int)) {
   int evt = 0;
   bool res = false;
+  #if EASYSDL_VERSION_MAJOR == 0 && EASYSDL_VERSION_MINOR == 1 && EASYSDL_VERSION_PATCH == 0
   while (EZ_recupere_evenement_continu(&evt)) {
     res = true;
     if (evt == EZ_EXIT) {
@@ -66,6 +67,15 @@ bool fetchEvents(void (*handler)(int)) {
     }
     (*handler)(evt);
   }
+  #elif EASYSDL_VERSION_MAJOR == 0 && EASYSDL_VERSION_MINOR == 1 && EASYSDL_VERSION_PATCH == 1
+  while (evt = EZ_recupere_evenement_continu()) {
+    res = true;
+    if (evt == EZ_EXIT) {
+      easysdlExited = true;
+    }
+    (*handler)(evt);
+  }
+  #endif
   return res;
 }
 
@@ -78,4 +88,127 @@ void waitExit() {
       if (evt == EZ_EXIT) loop = false;
     }
   }
+}
+
+Keymap Keymap_new() {
+  Keymap km = (Keymap)malloc(sizeof(struct Keymap));
+  km->n_keys = 0;
+  km->n_binds = (size_t*)malloc(0);
+  km->raw = (int**)malloc(0);
+  km->pressed = (bool**)malloc(0);
+  return km;
+}
+
+void Keymap_destroy(Keymap km) {
+  if (km->n_keys > 0) {
+    free(km->raw);
+    free(km->pressed);
+  }
+  free(km);
+}
+
+int Keymap_addKey(Keymap km) {
+  int** newRaws = (int**)malloc(sizeof(int*) * (km->n_keys + 1));
+  bool** newPressed = (bool**)malloc(sizeof(bool*) * (km->n_keys + 1));
+  size_t* newNBinds = (size_t*)malloc(sizeof(size_t) * (km->n_keys + 1));
+  size_t n;
+  for (n = 0; n < km->n_keys; n++) {
+    newRaws[n] = km->raw[n];
+    newPressed[n] = km->pressed[n];
+    newNBinds[n] = km->n_binds[n];
+  }
+  newRaws[km->n_keys] = (int*)malloc(0);
+  newPressed[km->n_keys] = (bool*)malloc(0);
+  newNBinds[km->n_keys] = 0;
+  free(km->pressed);
+  free(km->raw);
+  free(km->n_binds);
+  km->raw = newRaws;
+  km->pressed = newPressed;
+  km->n_binds = newNBinds;
+
+  return km->n_keys++;
+}
+
+void Keymap_bindKey(Keymap km, const int index, const int raw) {
+  if (index >= km->n_keys) {
+    printf("Invalid index for Keymap_bindKey: index is %d, length is %d\n", index, km->n_keys);
+    return;
+  }
+  if (!Keymap_hasBoundKey(km, index, raw)) {
+    int* newRaw = (int*)malloc(sizeof(int) * (km->n_binds[index] + 1));
+    bool* newPressed = (bool*)malloc(sizeof(bool) * (km->n_binds[index] + 1));
+    size_t n;
+    for (n = 0; n < km->n_binds[index]; n++) {
+      newRaw[n] = km->raw[index][n];
+      newPressed[n] = km->pressed[index][n];
+    }
+    newRaw[km->n_binds[index]] = raw;
+    newPressed[km->n_binds[index]] = false;
+    free(km->raw[index]);
+    free(km->pressed[index]);
+    km->raw[index] = newRaw;
+    km->pressed[index] = newPressed;
+    km->n_binds[index]++;
+  }
+}
+
+void Keymap_unbindKey(Keymap km, const int index, const int raw) {
+  if (index >= km->n_keys) {
+    printf("Invalid index for Keymap_bindKey: index is %d, length is %d\n", index, km->n_keys);
+    return;
+  }
+  if (!Keymap_hasBoundKey(km, index, raw)) {
+    int* newRaw = (int*)malloc(sizeof(int) * (km->n_binds[index] - 1));
+    bool* newPressed = (bool*)malloc(sizeof(bool) * (km->n_binds[index] - 1));
+    size_t n, o;
+    for (n = 0, o = 0; n < km->n_binds[index]; n++, o++) {
+      if (km->raw[index][n] == raw) {
+        o--;
+        continue;
+      }
+      newRaw[o] = km->raw[index][n];
+      newPressed[o] = km->pressed[index][n];
+    }
+    free(km->raw[index]);
+    free(km->pressed[index]);
+    km->raw[index] = newRaw;
+    km->pressed[index] = newPressed;
+    km->n_binds[index]++;
+  }
+}
+
+bool Keymap_hasBoundKey(Keymap km, const int index, const int raw) {
+  if (index >= km->n_keys) {
+    printf("Invalid index for Keymap_hasBoundKey: index is %d, length is %d\n", index, km->n_keys);
+    return false;
+  }
+  size_t n;
+  for (n = 0; n < km->n_binds[index]; n++) {
+    if (km->raw[index][n] == raw) return true;
+  }
+  return false;
+}
+
+void Keymap_update(Keymap km, const int key, const bool down) {
+  size_t n, o;
+  for (n = 0; n < km->n_keys; n++) {
+    for (o = 0; o < km->n_binds[n]; o++) {
+      if (key == km->raw[n][o]) {
+        km->pressed[n][o] = down;
+      }
+    }
+  }
+}
+
+bool Keymap_pressed(Keymap km, const int index) {
+  if (index >= km->n_keys) {
+    printf("Invalid index for Keymap_pressed: index is %d, length is %d\n", index, km->n_keys);
+    return false;
+  }
+  size_t n;
+  for (n = 0; n < km->n_binds[index]; n++) {
+    if (km->pressed[index][n]) return true;
+  }
+  return false;
 }
